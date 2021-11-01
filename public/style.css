@@ -1,0 +1,56 @@
+
+body {
+    background-color:whitesmoke;
+    text-align: center;
+  }
+
+#DisplayHomepage{
+    color: whitesmoke;
+    background-color:teal;
+}
+
+.navbar{
+    background-color: rgba(7, 78, 78, 0.89);
+}
+
+a{
+  color:whitesmoke;
+  text-decoration:none;
+}
+
+#Menu{
+  background-color:CadetBlue;
+  text-align:center;
+  color:whitesmoke
+}
+
+
+  
+  p {
+    font-family: verdana;
+    font-size: 16px;
+  }
+
+  table {
+    border: 2px solid grey;
+    border-collapse: collapse;
+    margin-left: auto;
+    margin-right: auto;
+    width: 50%;
+  }
+
+
+  tr:nth-child(even) {
+    background-color: #cacecc91;
+  }
+
+  #tr1 {
+    background-color: 	CadetBlue;
+    color:whitesmoke;
+  }
+
+  td {
+    border:1px solid grey;
+    padding: 10px;
+  }
+  
