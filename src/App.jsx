@@ -1,3 +1,9 @@
+const dateRegex = new RegExp('^\\d\\d\\d\\d-\\d\\d-\\d\\d');
+
+function jsonDateReviver(key, value) {
+  if (dateRegex.test(value)) return new Date(value);
+  return value;
+}
 
 class DisplayHomepage extends React.Component {
   render() {
@@ -74,8 +80,6 @@ function CustomerRow(props) {
   );
 }
 
-
-
 class AddCustomer extends React.Component {
   constructor() {
     super();
@@ -88,8 +92,7 @@ class AddCustomer extends React.Component {
     const customer = {
       name: form.name.value, phone: form.phone.value
     }
-    if (this.props.free > 0){
-    this.props.newCustomer(customer);}
+    this.props.newCustomer(customer);
     form.name.value = ""; form.phone.value = "";
   }
 
@@ -181,6 +184,30 @@ function DisplayCustomers(props) {
   );
   }
 
+async function graphQLFetch(query, variables = {}) {
+  try {
+    const response = await fetch('/graphql', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json'},
+      body: JSON.stringify({ query, variables })
+    });
+    const body = await response.text();
+    const result = JSON.parse(body, jsonDateReviver);
+    if (result.errors) {
+      const error = result.errors[0];
+      if (error.extensions.code == 'BAD_USER_INPUT') {
+        const details = error.extensions.exception.errors.join('\n ');
+        alert(`${error.message}:\n ${details}`);
+      } else {
+        alert(`${error.extensions.code}: ${error.message}`);
+      }
+    }
+    return result.data;
+  } catch (e) {
+    alert(`Error in sending data to server: ${e.message}`);
+  }
+}
+  
 
 class Waitlist extends React.Component{
   constructor() {
@@ -190,35 +217,56 @@ class Waitlist extends React.Component{
     this.removeCustomer = this.removeCustomer.bind(this);
   }
 
-
-  newCustomer(customer) {
-    customer.serialNo = this.state.customers.length + 1;
-    customer.timeStamp = new Date();
-    const newWaitlist = this.state.customers.slice();
-    newWaitlist.push(customer);
-    this.setState({ customers: newWaitlist });
+  componentDidMount() {
+    this.loadData();
   }
 
-  removeCustomer(r) {
-    const newWaitlist = this.state.customers.slice();
-    if(r>0 && r <= newWaitlist.length){
-    newWaitlist.splice(r-1,1);
+  async loadData(){
+    const query = `query {
+      Customers{
+        serialNo
+        name
+        phone
+        timeStamp
+      }
+    }`;
+
+    const data = await graphQLFetch(query);
+    if (data){
+    this.setState({customers: data.Customers});
     }
-    var tmpWaitlist = newWaitlist.slice();
-    for(let i=0;i<tmpWaitlist.length;i++){
-      tmpWaitlist[i].serialNo = (i+1);
+  };
+
+  async newCustomer(customer) {
+    const query = `mutation addCustomer($customer:CustomerInputs!) {
+        addCustomer(newCustomer:$customer)
+    }`
+    const data = await graphQLFetch(query, { customer});
+    if (data){
+      this.loadData();
     }
-    this.setState({ customers: tmpWaitlist });
+    if(data.addCustomer){
+    alert(data.addCustomer)}
   }
+
+  async removeCustomer(r) {
+    const query = `mutation{
+      removeCustomer(targetId:${r})
+  }`
+  const data = await graphQLFetch(query, {r});
+  this.loadData();
+  if(data.removeCustomer){
+  alert(data.removeCustomer)}
+}
 
 
   render(){
   return (
     <div className="Waitlist">
     <DisplayHomepage/>
-    <DisplayFreeSlots free={20 - this.state.customers.length}/>
+    <DisplayFreeSlots free={25 - this.state.customers.length}/>
     <Menu/>
-    <AddCustomer newCustomer={this.newCustomer} free={20 - this.state.customers.length}/>
+    <AddCustomer newCustomer={this.newCustomer} free={25 - this.state.customers.length}/>
     <DeleteCustomer removeCustomer={this.removeCustomer} />
     <DisplayCustomers customers={this.state.customers}  />
     </div>

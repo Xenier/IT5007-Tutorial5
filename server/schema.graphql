@@ -1,12 +1,24 @@
-const typeDefs = `
-    type Query {
-      id: Int!
-      name: String!
-      phone: String!
-      timeStamp: String!
-    }
-    type Mutation {
-      addCustomer(newCustomer: String!): String
-      removeCustomer(targetId: Int!): Int
-    }
-`;
+scalar GraphQLDate
+
+type Customer{
+    serialNo: Int!
+    name: String!
+    phone: String!
+    timeStamp: GraphQLDate
+}
+
+input CustomerInputs {
+    name:String!
+    phone: String!
+}
+
+##### Top Level declarations
+
+type Query {
+  Customers:[Customer!]!
+}
+type Mutation {
+  addCustomer(newCustomer:CustomerInputs!): String
+  removeCustomer(targetId: Int!): String
+}
+
