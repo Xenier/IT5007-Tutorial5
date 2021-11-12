@@ -1,6 +1,7 @@
 scalar GraphQLDate
 
 type Customer{
+    _id: ID!
     serialNo: Int!
     name: String!
     phone: String!
