@@ -4,7 +4,6 @@ const { ApolloServer, UserInputError } = require('apollo-server-express');
 const { GraphQLScalarType } = require('graphql');
 const { format } = require('path');
 const { formatError } = require('graphql/error');
-
 const { Kind } = require('graphql/language')
 const { MongoClient } = require('mongodb');
 const { abort } = require('process');
@@ -17,9 +16,14 @@ async function connectToDb() {
   await client.connect();
   console.log('Connected to MongoDB at',url);
   db = client.db();
+
+  //initialize the database
+  await db.collection('customers').deleteMany({});
+  await db.collection('counters').deleteOne({_id:'customers'});
+  await db.collection('counters').insertOne({_id:'customers', current:0})
 }
 
-let Slots = 25;
+const Slots = 25;
 
 const GraphQLDate = new GraphQLScalarType({
   name: 'GraphQLDate',
@@ -57,7 +61,7 @@ async function getNextSequence(name) {
 function validateCustomer(newCustomer){
   const errors = [];
   if (newCustomer.name.length < 1){
-    errors.push('Name can not be empty.');
+    errors.push('Name cannot be empty.');
   }
   if (newCustomer.phone.length < 4){
     errors.push('Phone number should contain 4 digits at least.');
@@ -75,8 +79,8 @@ function validateCustomer(newCustomer){
 
 async function addCustomer(_,{newCustomer}){
   validateCustomer(newCustomer);
-  var customerDbLength = await db.collection('customers').count();
-  if(customerDbLength < 25){
+  var customerDbLength = await db.collection('customers').countDocuments();
+  if(customerDbLength < Slots){
     newCustomer.serialNo = await getNextSequence('customers');
     newCustomer.timeStamp = new Date();
     const result = await db.collection('customers').insertOne(newCustomer)
@@ -95,7 +99,7 @@ async function removeCustomer(_,{targetId}){
     await db.collection('counters').updateOne({_id:"customers"},{$set: {current:customerDbLength -1 }});
     return "Remove Succesfully"
   }
-  return "Sorry. The input is invalid.";
+  return "Sorry. Your input is invalid.";
 };
 
 const server = new ApolloServer({
